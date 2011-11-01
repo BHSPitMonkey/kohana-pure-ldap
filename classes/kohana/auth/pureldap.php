@@ -11,18 +11,12 @@
  */
 class Kohana_Auth_PureLDAP extends Auth {
 
-	// User list
-	protected $_users;
-
 	/**
 	 * Constructor loads the user list into the class.
 	 */
 	public function __construct($config = array())
 	{
 		parent::__construct($config);
-
-		// Load user list
-		//$this->_users = Arr::get($config, 'users', array());
 	}
 
 	/**
