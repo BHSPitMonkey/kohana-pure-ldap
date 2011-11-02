@@ -3,8 +3,8 @@ Kohana Pure LDAP
 
 An LDAP auth module for Kohana with no external dependencies.
 
-Version 1.0
-Released on 2011-10-31
+Version 1.1
+Released on 2011-11-02
 By Stephen Eisenhauer
 
 Introduction
