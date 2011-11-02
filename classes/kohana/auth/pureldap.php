@@ -18,6 +18,17 @@ class Kohana_Auth_PureLDAP extends Auth {
 	{
 		parent::__construct($config);
 	}
+	
+	/**
+	 * Gets the currently logged in user from the session.
+	 * Returns NULL if no user is currently logged in.
+	 *
+	 * @return  Model_LDAP_User or NULL
+	 */
+	public function get_user($default = NULL)
+	{
+		return $this->_session->get($this->_config['session_key'], $default);
+	}
 
 	/**
 	 * Logs a user in.
@@ -45,10 +56,48 @@ class Kohana_Auth_PureLDAP extends Auth {
 			if (ldap_bind($conn, $username.$rdn_suffix, $password))
 			{
 				// Login is successful. Retrieve additional user info from server.
-				// TODO
-				// // Store username in session
-				// $this->_session->set($this->_config['session_key'], $user);
+				$dn = $ldap_cfg->get('dn');
+				$filter = "(cn=$username)";
+				$attrs_dict = $ldap_cfg->get('attributes');
+				$attrs_values = array_values($attrs_dict);
 				
+				// If needed, add the 'roles attribute' to the list of attributes to fetch
+				$roles_attr = $ldap_cfg->get('roles_attr');
+				if (($roles_attr != NULL) && (array_search($roles_attr, $attrs_values) === FALSE))
+					$attrs_values[] = $roles_attr;
+				
+				// Perform the lookup
+				ldap_bind($conn, $username.$rdn_suffix, $password);
+				$search = ldap_search($conn, $dn, $filter, $attrs_values);
+				$results = ldap_get_entries($conn, $search);
+				$result = $results[0];	// Only interested in one result
+				
+				// Parse attributes mapping from our config and use the keys provided there
+				$attributes = array();
+				foreach ($attrs_dict as $userkey => $ldapkey)
+				{
+					// If search result doesn't contain this attribute, set it to NULL
+					if (!isset($result[$ldapkey]))
+						$result[$ldapkey] = NULL;
+
+					// If a key wasn't given in the config, default it to the ldapkey
+					if (!is_string($userkey))
+						$userkey = $ldapkey;
+					
+					// If this value is a singleton, just grab the 0th index from it
+					if ($result[$ldapkey]['count'] == 1)
+						$attributes[$userkey] = $result[$ldapkey][0];
+					else
+						$attributes[$userkey] = $result[$ldapkey];
+				}
+								
+				// TODO: Parse roles
+				
+				// Store user attributes in a LDAP_User object
+				$user = Model::factory('LDAP_User');
+				$user->username = $username;
+				$user->attributes = $attributes;
+								
 				// Success!
 				$success = TRUE;
 			}
@@ -57,6 +106,8 @@ class Kohana_Auth_PureLDAP extends Auth {
 		{
 			// Most likely an Invalid Credentials exception. Just do nothing.
 			$success = FALSE;	// Just to be sure
+			
+			//die($e);			// Debugging: Uncomment to see why login is failing
 		}
 		
 		// Close the connection
@@ -64,7 +115,7 @@ class Kohana_Auth_PureLDAP extends Auth {
 
 		// Finish up
 		if ($success)
-			return $this->complete_login($username);
+			return $this->complete_login($user);
 		return FALSE;
 	}
 
