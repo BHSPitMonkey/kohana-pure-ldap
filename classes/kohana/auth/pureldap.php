@@ -91,12 +91,19 @@ class Kohana_Auth_PureLDAP extends Auth {
 						$attributes[$userkey] = $result[$ldapkey];
 				}
 								
-				// TODO: Parse roles
+				// Parse roles (group memberships)
+				$roles = array();
+				for ($i=0; $i < $result[$roles_attr]['count']; $i++)
+				{
+					$grp_arr = explode(',', $result[$roles_attr][$i]);	// Explode on commas
+					$roles[] = str_replace('CN=', '', $grp_arr[0]);		// Strip CN= prefix
+				}
 				
 				// Store user attributes in a LDAP_User object
 				$user = Model::factory('LDAP_User');
 				$user->username = $username;
 				$user->attributes = $attributes;
+				$user->roles = $roles;
 								
 				// Success!
 				$success = TRUE;
@@ -107,7 +114,8 @@ class Kohana_Auth_PureLDAP extends Auth {
 			// Most likely an Invalid Credentials exception. Just do nothing.
 			$success = FALSE;	// Just to be sure
 			
-			//die($e);			// Debugging: Uncomment to see why login is failing
+			// Debugging: Uncomment to see why login is failing
+			//die($e);
 		}
 		
 		// Close the connection
