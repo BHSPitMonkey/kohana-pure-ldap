@@ -14,8 +14,8 @@ Kohana-Pure-LDAP is a module for [Kohana] [0] which extends the core
 Auth module to allow for authenticating against an LDAP server.
 
 This module is so-called 'Pure' because, unlike other Kohana LDAP auth
-modules in existence, this one does not external libraries like PEAR or 
-ZEND, instead only utilizing functions from PHP's standard 
+modules in existence, this one does not use external libraries like PEAR 
+or ZEND, instead only utilizing functions from PHP's standard 
 [LDAP extension] [1].
 
 Installation
@@ -60,8 +60,13 @@ something like this:
 	// Else, display the login form again with an error message.
 ```
 
-Additionally, `Auth::instance()->get_user()` will return the username 
-of the logged in user (or FALSE if no one is logged in).
+Additionally, `Auth::instance()->get_user()` will return a LDAP_User
+object representing the logged in user (or FALSE if no one is logged in).
+This object has three properties:
+
+* ->username, the username of the user
+* ->attributes, an associative array containing the attributes you specified in the config file
+* ->roles, an array of roles (groups) this user belongs to, given via an attribute specified in the config file
 
 License
 -------
